@@ -23,7 +23,7 @@ using namespace glm;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
-//#define DEBUG 1
+#define DEBUG 1
 
 typedef struct Vertex {
 	float XYZW[4];
@@ -253,7 +253,7 @@ void initSubIndexCounts() {
 
 #ifdef DEBUG
 	printf("\nIndex Counts Completed\n");
-	getchar();
+	//getchar();
 #endif
 
 }
@@ -683,33 +683,39 @@ static void mouseCallback(GLFWwindow* window, int button, int action, int mods)
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+
+
+
+	// Release action for keys 1, 2, 3
 	if (action == GLFW_RELEASE) {
-		std::string str = "";
 		switch (key) {
 		case GLFW_KEY_1:
-			str = "\nKey 1 Was Released\n";
 			lastkey = 1;
 			kCount++;
 			break;
 		case GLFW_KEY_2:
-			str = "\nKey 2 Was Released\n";
 			lastkey = 2;
 			kCount = 0;
 			break;
 		case GLFW_KEY_3:
-			str = "\nKey 3 Was Released\n";
 			lastkey = 3;
 			kCount = 0;
 			break;
-		default:
-			str = "\nKey pressed\n";
 		}
 
-#ifdef DEBUG
-		printf("%s", str);
-#endif
-
 	}
+
+	// Shift key Z-Axis Action
+	if (action == GLFW_PRESS) {
+		if(key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
+		printf("\nShift Key Is Pressed\n");
+
+
+		}
+	}
+
+
+
 }
 
 void subdivide() {
@@ -821,7 +827,7 @@ void bezierCurve() {
 		printf("Bezier c1 and c2 set to %f,%f and %f,%f\n", bezierPtr[(4 * i) + 1].XYZW[0], bezierPtr[(4 * i) + 1].XYZW[1], bezier[(4 * i) + 2].XYZW[0], bezier[(4 * i) + 2].XYZW[1]);
 		printf("Bezier c0 and c3 set to %f,%f and %f,%f\n", bezierPtr[(4 * i)].XYZW[0], bezierPtr[(4 * i)].XYZW[1], bezier[(4 * i) + 3].XYZW[0], bezier[(4 * i) + 3].XYZW[1]);
 		printf("Positions in Bezier array were c1: %d, c2: %d, c3: %d, and c4: %d\n", (i * 4), (i * 4) + 1, (i * 4) + 2, (i * 4) + 3);
-		getchar();
+		//getchar();
 #endif
 		
 	}
@@ -917,7 +923,7 @@ void cRomCurve() {
 		printf("cRom c1 and c2 set to %f,%f and %f,%f\n", cRomPtr[(4 * i) + 1].XYZW[0], cRomPtr[(4 * i) + 1].XYZW[1], bezier[(4 * i) + 2].XYZW[0], cRomPtr[(4 * i) + 2].XYZW[1]);
 		printf("cRom c0 and c3 set to %f,%f and %f,%f\n", cRomPtr[(4 * i)].XYZW[0], cRomPtr[(4 * i)].XYZW[1], bezier[(4 * i) + 3].XYZW[0], cRomPtr[(4 * i) + 3].XYZW[1]);
 		printf("Positions in cRom array were c1: %d, c2: %d, c3: %d, and c4: %d\n", (i * 4), (i * 4) + 1, (i * 4) + 2, (i * 4) + 3);
-		getchar();
+		//getchar();
 #endif
 
 	}
