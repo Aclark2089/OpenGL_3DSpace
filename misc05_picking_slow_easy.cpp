@@ -701,6 +701,11 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			lastkey = 3;
 			kCount = 0;
 			break;
+		case GLFW_KEY_LEFT_SHIFT:
+			printf("\nLeft Shift Key Was Released\n");
+			break;
+		case GLFW_KEY_RIGHT_SHIFT:
+			printf("\nRight Shift Key Was Released\n");
 		}
 
 	}
