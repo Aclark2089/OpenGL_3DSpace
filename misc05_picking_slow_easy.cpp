@@ -1,4 +1,3 @@
-// Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -232,7 +231,9 @@ Vertex* decastlePtr = decastle;
 float subdivideColor[] = { 0.0f, 1.0f, 1.0f, 1.0f }; // Cyan Color for subdiv pts
 float bezierColor[] = { 1.0f, 1.0f, 0.0f, 1.0f }; // Yellow Color for bezier verticies
 float cRomPtsColor[] = { 1.0f, 0.0f, 0.0f, 1.0f }; // Red Color for catmull-rom bezier verts
-float cRomCurveColor[] = { 0.0f, 1.0f, 0.0f, 1.0f };
+float cRomCurveColor[] = { 0.0f, 1.0f, 0.0f, 1.0f }; // Green Color for catmull-rom curve from decastlejau
+float ZColor[] = {0.0f, 1.0f, 0.0f, 1.0f }; // Green color for picked axis in Z plane movement
+float XYColor[] = { 1.0f, 0.0f, 0.0f, 1.0f }; // Red color for picked axis in XY plane movement
 
 // Setup the indicies for the subdivisions
 void initSubIndexCounts() {
@@ -506,12 +507,21 @@ void moveVertex(void)
 	glm::vec4 vp = glm::vec4(viewport[0], viewport[1], viewport[2], viewport[3]);
 	glm::vec3 worldCoords = glm::unProject(glm::vec3(window_width - xpos, window_height - ypos, 0.0), ModelMatrix, gProjectionMatrix, vp);
 
-	if (gPickedIndex < IndexCount) {
-		Vertices[gPickedIndex].XYZW[0] = worldCoords[0];
-		Vertices[gPickedIndex].XYZW[1] = worldCoords[1];
+	if (lastkey != 4) {	// If we are moving xy plane with shift key not being toggled
+		if (gPickedIndex < IndexCount) {
+			Vertices[gPickedIndex].XYZW[0] = worldCoords[0];
+			Vertices[gPickedIndex].XYZW[1] = worldCoords[1];
+			Vertices[gPickedIndex].SetColor(XYColor);
+		}
+	}
+	else { // If we are moving z axis with vertical mouse movement with shift key toggled
+		if (gPickedIndex < IndexCount) {
+			Vertices[gPickedIndex].XYZW[2] = worldCoords[1];
+			Vertices[gPickedIndex].SetColor(ZColor);
+		}
 	}
 
-	if (gPickedIndex == 255){ // Full white, must be the background !
+	if (gPickedIndex == 255) { // Full white, must be the background !
 		gMessage = "background";
 	}
 	else {
@@ -521,8 +531,7 @@ void moveVertex(void)
 	}
 }
 
-int initWindow(void)
-{
+int initWindow() {
 	// Initialise GLFW
 	if (!glfwInit()) {
 		fprintf(stderr, "Failed to initialize GLFW\n");
@@ -587,7 +596,8 @@ void initOpenGL(void)
 
 	// Camera matrix
 	gViewMatrix = glm::lookAt(
-		glm::vec3(0, 0, -5), // Camera is at (4,3,3), in World Space
+		//glm::vec3(0, 0, -5), // Camera is at (4,3,3), in World Space
+		glm::vec3(-5, 0, 0),  // Test Z - Axis 
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 		);
@@ -701,11 +711,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			lastkey = 3;
 			kCount = 0;
 			break;
-		case GLFW_KEY_LEFT_SHIFT:
-			printf("\nLeft Shift Key Was Released\n");
-			break;
-		case GLFW_KEY_RIGHT_SHIFT:
-			printf("\nRight Shift Key Was Released\n");
 		}
 
 	}
@@ -714,8 +719,9 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 	if (action == GLFW_PRESS) {
 		if(key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
 		printf("\nShift Key Is Pressed\n");
-
-
+		(lastkey == 4) ? lastkey = -1 : lastkey = 4;
+		printf("Lastkey set to %d\n", lastkey);
+		(lastkey == 4) ? printf("Z-Axis Movement Turned ON\n") : printf("Z Axis Movement Turned OFF\n");
 		}
 	}
 
