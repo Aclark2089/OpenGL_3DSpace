@@ -4,6 +4,7 @@
 #include <array>
 #include <sstream>
 #include <string>
+#include <math.h>
 // Include GLEW
 #include <GL/glew.h>
 // Include GLFW
@@ -23,6 +24,7 @@ using namespace glm;
 #include <common/vboindexer.hpp>
 
 #define DEBUG 1
+#define PI 3.1415926535897
 
 typedef struct Vertex {
 	float XYZW[4];
@@ -345,17 +347,45 @@ void drawScene(void)
 
 
 		glm::mat4 ModelMatrix = glm::mat4(1.0); // TranslationMatrix * RotationMatrix;
-		glm::mat4 MVP = gProjectionMatrix * gViewMatrix * ModelMatrix;
+		glm::mat4 ModelMatrix2 = glm::mat4(1.0);  // Second ModelMatrix for Translation
+		glm::mat4 MVP;
+		glm::mat4 MVP2;
 
 
-		
-		// if key4 pressed {
-		//glm::scale
-		//glm::translate
-		// }
+		// If using double view mode, we setup the second model matrix
+		if (doubleView) {
 
-		// Send our transformation to the currently bound shader,
-		// in the "MVP" uniform
+			// Scale our original ModelMatrix
+			ModelMatrix = glm::scale(
+				ModelMatrix,
+				glm::vec3(0.8f)
+				);
+
+			// Move ModelMatrix2 Downwards from Origin
+			ModelMatrix2 = glm::translate(
+				ModelMatrix,
+				glm::vec3(0.0f, -1.75f, 0.0f)
+				); // TranslationMatrix * RotationMatrix;
+
+			// Translate the ModelMatrix Upwards from Origin
+			ModelMatrix = glm::translate(
+				ModelMatrix,
+				glm::vec3(0.0f, 1.75f, 0.0f)
+				); // TranslationMatrix * RotationMatrix;
+
+			// Rotate ModelMatrix2 Around Y Axis by PI/2 for side view
+			ModelMatrix2 = glm::rotate(
+				ModelMatrix2,
+				float(PI / 2),
+				glm::vec3(0.0f, 1.0f, 0.0f)
+				);
+		}
+
+		// Setup the MVPs
+		MVP = gProjectionMatrix * gViewMatrix * ModelMatrix;
+		MVP2 = gProjectionMatrix * gViewMatrix * ModelMatrix2;
+
+		// Draw the ModelMatrix 
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &gViewMatrix[0][0]);
@@ -366,16 +396,103 @@ void drawScene(void)
 
 		glBindVertexArray(VertexArrayId[0]);	// draw Vertices
 		glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[0]);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);				// update buffer data
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
 		//glDrawElements(GL_LINE_LOOP, NumVert[0], GL_UNSIGNED_SHORT, (void*)0);
 		glDrawElements(GL_POINTS, NumVert[0], GL_UNSIGNED_SHORT, (void*)0);
 
-		// ATTN: OTHER BINDING AND DRAWING COMMANDS GO HERE, one set per object:
+		// Key Action Task Selection
+		switch (lastkey) {
+		case 1: // Subdivide
+			switch (kCount) { // Based on level, subdivide X many times
+			case 5:
 
-		switch (lastkey)
-		{
-		case 1:
-			switch (kCount) {
+				glBindVertexArray(VertexArrayId[5]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[5]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(subdivision5), subdivision5);
+				glDrawElements(GL_POINTS, NumVert[5], GL_UNSIGNED_SHORT, (void*)0);
+				break;
+
+			case 4:
+
+				glBindVertexArray(VertexArrayId[4]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[4]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(subdivision4), subdivision4);
+				glDrawElements(GL_POINTS, NumVert[4], GL_UNSIGNED_SHORT, (void*)0);
+				break;
+
+			case 3:
+
+				glBindVertexArray(VertexArrayId[3]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[3]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(subdivision3), subdivision3);
+				glDrawElements(GL_POINTS, NumVert[3], GL_UNSIGNED_SHORT, (void*)0);
+				break;
+
+			case 2:
+
+				glBindVertexArray(VertexArrayId[2]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[2]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(subdivision2), subdivision2);
+				glDrawElements(GL_POINTS, NumVert[2], GL_UNSIGNED_SHORT, (void*)0);
+				break;
+
+			case 1:
+
+				glBindVertexArray(VertexArrayId[1]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[1]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(subdivision1), subdivision1);
+				glDrawElements(GL_POINTS, NumVert[1], GL_UNSIGNED_SHORT, (void*)0);
+				break;
+			}
+			break;
+
+			// Create Bez Curve
+		case 2:
+			glBindVertexArray(VertexArrayId[6]);	// draw Vertices
+			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[6]);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bezier), bezier);
+			glDrawElements(GL_LINE_LOOP, NumVert[6], GL_UNSIGNED_SHORT, (void*)0);
+			glDrawElements(GL_POINTS, NumVert[6], GL_UNSIGNED_SHORT, (void*)0);
+			break;
+
+			// Create Catmull Rom Curve using CRom pts and Decastlejau pts
+		case 3:
+			glBindVertexArray(VertexArrayId[7]);	// draw Vertices
+			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[7]);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cRom), cRom);
+			glDrawElements(GL_LINE_LOOP, NumVert[7], GL_UNSIGNED_SHORT, (void*)0);
+			glDrawElements(GL_POINTS, NumVert[7], GL_UNSIGNED_SHORT, (void*)0);
+
+			glBindVertexArray(VertexArrayId[8]);	// draw Vertices
+			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[8]);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(decastle), decastle);
+			glDrawElements(GL_LINE_LOOP, NumVert[8], GL_UNSIGNED_SHORT, (void*)0);
+
+		}
+	
+
+		// If doubleView enabled, draw the second object
+		if (doubleView) {
+
+			// Draw ModelMatrix2
+			glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP2[0][0]);
+			glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix2[0][0]);
+			glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &gViewMatrix[0][0]);
+			glm::vec3 lightPos = glm::vec3(4, 4, 4);
+			glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+
+			glEnable(GL_PROGRAM_POINT_SIZE);
+
+			glBindVertexArray(VertexArrayId[0]);	// draw Vertices
+			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[0]);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
+			glDrawElements(GL_POINTS, NumVert[0], GL_UNSIGNED_SHORT, (void*)0);
+
+			// Key Action Tasks
+			switch (lastkey)
+			{
+			case 1: // Subdivision
+				switch (kCount) {
 				case 5:
 
 					glBindVertexArray(VertexArrayId[5]);	// draw Vertices
@@ -415,37 +532,36 @@ void drawScene(void)
 					glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(subdivision1), subdivision1);
 					glDrawElements(GL_POINTS, NumVert[1], GL_UNSIGNED_SHORT, (void*)0);
 					break;
-			}
-			break;
+				}
+				break;
 
-		// Create Bez Curve
-		case 2:
-			glBindVertexArray(VertexArrayId[6]);	// draw Vertices
-			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[6]);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bezier), bezier);
-			glDrawElements(GL_LINE_LOOP, NumVert[6], GL_UNSIGNED_SHORT, (void*)0);
-			glDrawElements(GL_POINTS, NumVert[6], GL_UNSIGNED_SHORT, (void*)0);
-			break;
+				// Create Bez Curve
+			case 2:
+				glBindVertexArray(VertexArrayId[6]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[6]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bezier), bezier);
+				glDrawElements(GL_LINE_LOOP, NumVert[6], GL_UNSIGNED_SHORT, (void*)0);
+				glDrawElements(GL_POINTS, NumVert[6], GL_UNSIGNED_SHORT, (void*)0);
+				break;
 
-		// Create Catmull Rom Curve using CRom pts and Decastlejau pts
-		case 3:
-			glBindVertexArray(VertexArrayId[7]);	// draw Vertices
-			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[7]);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cRom), cRom);
-			glDrawElements(GL_LINE_LOOP, NumVert[7], GL_UNSIGNED_SHORT, (void*)0);
-			glDrawElements(GL_POINTS, NumVert[7], GL_UNSIGNED_SHORT, (void*)0);
+				// Create Catmull Rom Curve using CRom pts and Decastlejau pts
+			case 3:
+				glBindVertexArray(VertexArrayId[7]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[7]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cRom), cRom);
+				glDrawElements(GL_LINE_LOOP, NumVert[7], GL_UNSIGNED_SHORT, (void*)0);
+				glDrawElements(GL_POINTS, NumVert[7], GL_UNSIGNED_SHORT, (void*)0);
 
-			glBindVertexArray(VertexArrayId[8]);	// draw Vertices
-			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[8]);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(decastle), decastle);
-			glDrawElements(GL_LINE_LOOP, NumVert[8], GL_UNSIGNED_SHORT, (void*)0);
+				glBindVertexArray(VertexArrayId[8]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[8]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(decastle), decastle);
+				glDrawElements(GL_LINE_LOOP, NumVert[8], GL_UNSIGNED_SHORT, (void*)0);
 
+			};
+
+			// Binding All VAOs
+			glBindVertexArray(0);
 		}
-
-
-		// Binding All VAOs
-		glBindVertexArray(0);
-
 	}
 	glUseProgram(0);
 	// Draw GUI
@@ -465,6 +581,24 @@ void pickVertex(void)
 	glUseProgram(pickingProgramID);
 	{
 		glm::mat4 ModelMatrix = glm::mat4(1.0); // TranslationMatrix * RotationMatrix;
+		
+		// Handle the doubleView case for scale & translation of the ModelMatrix
+		if (doubleView) {
+			
+			// Scale Matrix
+			ModelMatrix = glm::scale(
+				ModelMatrix,
+				glm::vec3(0.8f)
+				);
+
+			// Translate Matrix
+			ModelMatrix = glm::translate(
+				ModelMatrix,
+				glm::vec3(0.0f, 1.75f, 0.0f)
+				); 
+		}
+
+		// Setup MVP 
 		glm::mat4 MVP = gProjectionMatrix * gViewMatrix * ModelMatrix;
 
 		// Send our transformation to the currently bound shader, in the "MVP" uniform
@@ -512,6 +646,22 @@ void moveVertex(void)
 	glm::mat4 ModelMatrix = glm::mat4(1.0);
 	double xpos, ypos;
 	glfwGetCursorPos(window, &xpos, &ypos);
+
+	// Handle the doubleView case for scale & translation of the ModelMatrix
+	if (doubleView) {
+
+		// Scale Matrix
+		ModelMatrix = glm::scale(
+			ModelMatrix,
+			glm::vec3(0.8f)
+			);
+
+		// Translate Matrix
+		ModelMatrix = glm::translate(
+			ModelMatrix,
+			glm::vec3(0.0f, 1.75f, 0.0f)
+			);
+	}
 
 	GLint viewport[4];
 	glGetIntegerv(GL_VIEWPORT, viewport);
@@ -786,6 +936,7 @@ void calculateSubdivision(Vertex* thisSubdivision, Vertex* const lastSubdivision
 	// Values for the coords & keeping position
 	float xCoord; // X Coord For The Vertex
 	float yCoord; // Y Coord For The Vertex
+	float zCoord; // Z Coord For The Vertex
 	int k; // Previous level (i - 1)
 	int j; // Next level (i + 1)
 	int numVerts = subIndexCounts.at(level-1); // Number of verts in the last subdivision level
@@ -806,19 +957,23 @@ void calculateSubdivision(Vertex* thisSubdivision, Vertex* const lastSubdivision
 			j = 0;
 		}
 
-		// P[2i]
+		// P[2i + 1]
 		xCoord = (lastSubdivision[k].XYZW[0] + (6 * lastSubdivision[i].XYZW[0]) + lastSubdivision[j].XYZW[0]) / 8;
 		yCoord = (lastSubdivision[k].XYZW[1] + (6 * lastSubdivision[i].XYZW[1]) + lastSubdivision[j].XYZW[1]) / 8;
+		zCoord = (lastSubdivision[k].XYZW[2] + (6 * lastSubdivision[i].XYZW[2]) + lastSubdivision[j].XYZW[2]) / 8;
 		thisSubdivision[(i * 2) + 1].XYZW[0] = xCoord; // X
 		thisSubdivision[(i * 2) + 1].XYZW[1] = yCoord; // Y
+		thisSubdivision[(i * 2) + 1].XYZW[2] = zCoord; // Z
 		thisSubdivision[(i * 2) + 1].XYZW[3] = 1.0f; // W
 		thisSubdivision[(i * 2) + 1].SetColor(subdivideColor); // Subdivision Color Set
 
-		// P[2i+1]
+		// P[2i]
 		xCoord = ((4 * lastSubdivision[k].XYZW[0]) + (4 * lastSubdivision[i].XYZW[0])) / 8;
 		yCoord = ((4 * lastSubdivision[k].XYZW[1]) + (4 * lastSubdivision[i].XYZW[1])) / 8;
+		zCoord = ((4 * lastSubdivision[k].XYZW[2]) + (4 * lastSubdivision[i].XYZW[2])) / 8;
 		thisSubdivision[i * 2].XYZW[0] = xCoord; // X
 		thisSubdivision[i * 2].XYZW[1] = yCoord; // Y
+		thisSubdivision[i * 2].XYZW[2] = zCoord; // Z
 		thisSubdivision[i * 2].XYZW[3] = 1.0f; // W
 		thisSubdivision[i * 2].SetColor(subdivideColor); // Subdivision Color Set
 
@@ -865,64 +1020,74 @@ void calculateBezSegment(const Vertex p1, const Vertex pPlus1, const Vertex pMin
 
 	float x0; // X Coord For The c0 Vertex
 	float y0; // Y Coord For The c0 Vertex
+	float z0; // Z Coord For The c0 Vertex
 
 	float x1; // X Coord For The c1 Vertex
 	float y1; // Y Coord For The c1 Vertex
+	float z1; // z Coord For The c1 Vertex
 
 	float x2; // X Coord For The c2 Vertex
 	float y2; // Y Coord For The c2 Vertex
+	float z2; // Y Coord For The c2 Vertex
 
 	float x3; // X Coord For The c3 Vertex
 	float y3; // Y Coord For The c3 Vertex
+	float z3; // Z Coord For The c3 Vertex
 
-	// calc c1 xy
+	// calc c1 xyz
 	x1 = ((2 * p1.XYZW[0]) + pPlus1.XYZW[0]) / 3;
 	y1 = ((2 * p1.XYZW[1]) + pPlus1.XYZW[1]) / 3;
+	z1 = ((2 * p1.XYZW[2]) + pPlus1.XYZW[2]) / 3;
 
-	// calc c2 xy
+	// calc c2 xyz
 	x2 = (p1.XYZW[0] + (2 * pPlus1.XYZW[0])) / 3;
 	y2 = (p1.XYZW[1] + (2 * pPlus1.XYZW[1])) / 3;
+	z2 = (p1.XYZW[2] + (2 * pPlus1.XYZW[2])) / 3;
 
 	// Set xy for c1
 	c1->XYZW[0] = x1;
 	c1->XYZW[1] = y1;
-	c1->XYZW[2] = 0.0f;
+	c1->XYZW[2] = z1;
 	c1->XYZW[3] = 1.0f;
 	c1->SetColor(bezierColor);
 
 	// Set xy for c2
 	c2->XYZW[0] = x2;
 	c2->XYZW[1] = y2;
-	c2->XYZW[2] = 0.0f;
+	c2->XYZW[2] = z2;
 	c2->XYZW[3] = 1.0f;
 	c2->SetColor(bezierColor);
 
 	// calc c0 xy
 	x0 = (pMinus1.XYZW[0] + (2 * p1.XYZW[0])) / 3;
 	y0 = (pMinus1.XYZW[1] + (2 * p1.XYZW[1])) / 3;
+	z0 = (pMinus1.XYZW[2] + (2 * p1.XYZW[2])) / 3;
 
 	// midpoint of i-1 and i Vertex
 	x0 = (x0 + x1) / 2;
 	y0 = (y0 + y1) / 2;
+	z0 = (z0 + z1) / 2;
 
 	// calc c3 xy
 	x3 = ((2 * pPlus1.XYZW[0]) + pPlus2.XYZW[0]) / 3;
 	y3 = ((2 * pPlus1.XYZW[1]) + pPlus2.XYZW[1]) / 3;
+	z3 = ((2 * pPlus1.XYZW[2]) + pPlus2.XYZW[2]) / 3;
 
 	x3 = (x3 + x2) / 2;
 	y3 = (y3 + y2) / 2;
+	z3 = (z3 + z2) / 2;
 
 	// Set xy for c0
 	c0->XYZW[0] = x0;
 	c0->XYZW[1] = y0;
-	c0->XYZW[2] = 0.0f;
+	c0->XYZW[2] = z0;
 	c0->XYZW[3] = 1.0f;
 	c0->SetColor(bezierColor);
 
 	// Set xy for c3
 	c3->XYZW[0] = x3;
 	c3->XYZW[1] = y3;
-	c3->XYZW[2] = 0.0f;
+	c3->XYZW[2] = z3;
 	c3->XYZW[3] = 1.0f;
 	c3->SetColor(bezierColor);
 }
@@ -971,7 +1136,7 @@ for (int i = 0; i < IndexCount; i++) {
 					// For each loop set Q's point at this index of the segment to the correct value based on the set ones we coped from the bezier array
 					Q[4 * i + l].XYZW[0] = (1.0f - (u / 15.0f)) * (Q[4 * i + l].XYZW[0]) + (u / 15.0f)*(Q[4 * i + l + 1].XYZW[0]);	  // X
 					Q[4 * i + l].XYZW[1] = (1.0f - (u / 15.0f)) * (Q[4 * i + l].XYZW[1]) + (u / 15.0f)*(Q[4 * i + l + 1].XYZW[1]);	  // Y
-					Q[4 * i + l].XYZW[2] = 0.0f;	// Z
+					Q[4 * i + l].XYZW[2] = (1.0f - (u / 15.0f)) * (Q[4 * i + l].XYZW[2]) + (u / 15.0f)*(Q[4 * i + l + 1].XYZW[2]);	  // Z
 					Q[4 * i + l].XYZW[3] = 1.0f;	// W
 					Q[4 * i + l].SetColor(cRomCurveColor);	// Color
 
@@ -995,21 +1160,27 @@ void calculateCRomPoints(const Vertex p1, const Vertex pPlus1, const Vertex pMin
 
 	float x0; // X Coord For The c0 Vertex
 	float y0; // Y Coord For The c0 Vertex
+	float z0; // Z Coord For The c0 Vertex
 
 	float x1; // X Coord For The c1 Vertex
 	float y1; // Y Coord For The c1 Vertex
+	float z1; // Z Coord For The c1 Vertex
 
 	float x2; // X Coord For The c2 Vertex
 	float y2; // Y Coord For The c2 Vertex
+	float z2; // Z Coord For The c2 Vertex
 
 	float x3; // X Coord For The c3 Vertex
 	float y3; // Y Coord For The c3 Vertex
+	float z3; // Z Coord For The c3 Vertex
 
 	float p1xTangent = pPlus1.XYZW[0] - pMinus1.XYZW[0]; // X tangent
 	float p1yTangent = pPlus1.XYZW[1] - pMinus1.XYZW[1]; // Y tangent
+	float p1zTangent = pPlus1.XYZW[2] - pMinus1.XYZW[2]; // Z tangent
 
 	float p2xTangent = pPlus2.XYZW[0] - p1.XYZW[0]; // X tangent
 	float p2yTangent = pPlus2.XYZW[1] - p1.XYZW[1]; // Y tangent
+	float p2zTangent = pPlus2.XYZW[2] - p1.XYZW[2]; // Z tangent
 
 
 	float tWeight = 0.2; // t value @ position for pt (affects where the cRomPoints are displayed, tried to get it close to the website's)
@@ -1017,44 +1188,48 @@ void calculateCRomPoints(const Vertex p1, const Vertex pPlus1, const Vertex pMin
 	// Calculate c0
 	x0 = p1.XYZW[0];
 	y0 = p1.XYZW[1];
+	z0 = p1.XYZW[2];
 
 	// Calculate c3
 	x3 = pPlus1.XYZW[0];
 	y3 = pPlus1.XYZW[1];
+	z3 = pPlus1.XYZW[2];
 
 	// Calculate c1
 	x1 = x0 + tWeight*p1xTangent;
 	y1 = y0 + tWeight*p1yTangent;
+	z1 = z0 + tWeight*p1zTangent;
 
 	// Calculate c2
 	x2 = x3 - tWeight*p2xTangent;
 	y2 = y3 - tWeight*p2yTangent;
+	z2 = z3 - tWeight*p2zTangent;
 
 	// Set c0
 	c0->XYZW[0] = x0;
 	c0->XYZW[1] = y0;
-	c0->XYZW[2] = 0.0f;
+	c0->XYZW[2] = z0;
 	c0->XYZW[3] = 1.0f;
 	c0->SetColor(cRomPtsColor);
 
 	// Set c1
 	c1->XYZW[0] = x1;
 	c1->XYZW[1] = y1;
-	c1->XYZW[2] = 0.0f;
+	c1->XYZW[2] = z1;
 	c1->XYZW[3] = 1.0f;
 	c1->SetColor(cRomPtsColor);
 
 	// Set c2
 	c2->XYZW[0] = x2;
 	c2->XYZW[1] = y2;
-	c2->XYZW[2] = 0.0f;
+	c2->XYZW[2] = z2;
 	c2->XYZW[3] = 1.0f;
 	c2->SetColor(cRomPtsColor);
 
 	// Set c3
 	c3->XYZW[0] = x3;
 	c3->XYZW[1] = y3;
-	c3->XYZW[2] = 0.0f;
+	c3->XYZW[2] = z3;
 	c3->XYZW[3] = 1.0f;
 	c3->SetColor(cRomPtsColor);
 
