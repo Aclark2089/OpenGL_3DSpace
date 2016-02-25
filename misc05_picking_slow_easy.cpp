@@ -102,6 +102,7 @@ const GLuint window_width = 1024, window_height = 768;
 int lastkey; // Key callback saver for testing
 bool zPick = false; // Toggle for Z Picking
 bool doubleView = false; // Toggle for 2 Views
+bool loopToggle = false; // Toggle for the looping vertex
 
 // Window Title
 char* windowTitle = "R. Alex Clark (6416-3663)";
@@ -117,17 +118,18 @@ GLuint pickingProgramID;
 
 // ATTN: INCREASE THIS NUMBER AS YOU CREATE NEW OBJECTS
 
-const GLuint NumObjects = 9;	// number of different "objects" to be drawn
+const GLuint NumObjects = 10;	// number of different "objects" to be drawn
 
 GLuint VertexArrayId[NumObjects] = { 0,				// Verticies Array
 									1, 2, 3, 4, 5,  // Subdivision Arrays
 									6,				// Bezier Array
 									7, 				// Catmull - Rom Pts Array 
-									8 };			// Decastlejau Pts Array					
+									8,				// Decastlejau Pts Array	
+									9};				// Looping Vertex Array			
 
-GLuint VertexBufferId[NumObjects] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-GLuint IndexBufferId[NumObjects] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-size_t NumVert[NumObjects] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+GLuint VertexBufferId[NumObjects] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+GLuint IndexBufferId[NumObjects] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+size_t NumVert[NumObjects] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
 GLuint MatrixID;
 GLuint ViewMatrixID;
@@ -231,6 +233,10 @@ Vertex decastle[150]; // 150 decastle pts (N = 10 segments @ 15 pts per segment)
 Vertex* cRomPtr = cRom;	  // ptr to the cRom Segments Array
 Vertex* decastlePtr = decastle;
 
+// looping vertex
+unsigned short loopIndex[1];
+Vertex loop[1];
+
 // Vertex Colors
 float subdivideColor[] = { 0.0f, 1.0f, 1.0f, 1.0f }; // Cyan Color for subdiv pts
 float bezierColor[] = { 1.0f, 1.0f, 0.0f, 1.0f }; // Yellow Color for bezier verticies
@@ -296,6 +302,9 @@ void initIndicies() {
 	for (int i = 0; i < nDecastlePts*IndexCount; i++) {
 		decastleIndicies[i] = i;
 	}
+
+	// Looping index
+	loopIndex[0] = 0;
 
 }
 
@@ -855,8 +864,6 @@ static void mouseCallback(GLFWwindow* window, int button, int action, int mods)
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 
-
-
 	// Release action for keys 1, 2, 3
 	if (action == GLFW_RELEASE) {
 		switch (key) {
@@ -890,6 +897,11 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			printf("\nShift Key Is Pressed\n");
 			zPick = !zPick;
 			(zPick) ? printf("Z Axis Picking ON\n") : printf("Z Axis Picking OFF\n");
+		}
+
+		if (key == GLFW_KEY_5) {
+			loopToggle = !(loopToggle);
+			(loopToggle) ? printf("Loop Toggle ON\n") : printf("Loop Toggle OFF\n");
 		}
 	}
 }
