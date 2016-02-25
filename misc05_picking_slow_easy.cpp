@@ -1267,8 +1267,6 @@ int main(void)
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT))
 			moveVertex();
 
-		// Subdividing verticies on user key press of 1
-
 		// DRAWING SCENE
 		createObjects(); // re-evaluate curves in case vertices have been moved
 		drawScene();
