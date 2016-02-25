@@ -96,6 +96,9 @@ void calculateBezSegment(const Vertex, const Vertex, const Vertex, const Vertex,
 void cRomCurve(void);
 void calculateCRomPoints(const Vertex, const Vertex, const Vertex, const Vertex, Vertex *, Vertex *, Vertex *, Vertex *);
 
+// Looping Vertex Functions
+void calculateLoop(void);
+
 // GLOBAL VARIABLES
 GLFWwindow* window;
 const GLuint window_width = 1024, window_height = 768;
@@ -234,8 +237,9 @@ Vertex* cRomPtr = cRom;	  // ptr to the cRom Segments Array
 Vertex* decastlePtr = decastle;
 
 // looping vertex
-unsigned short loopIndex[1];
-Vertex loop[1];
+unsigned short loopIndex[1]; // Loop vertex index array
+Vertex loop[1]; // Loop vertex array
+int currentLoopPosition; // Counter for the loop position for each decastlejau point
 
 // Vertex Colors
 float subdivideColor[] = { 0.0f, 1.0f, 1.0f, 1.0f }; // Cyan Color for subdiv pts
@@ -244,6 +248,7 @@ float cRomPtsColor[] = { 1.0f, 0.0f, 0.0f, 1.0f }; // Red Color for catmull-rom 
 float cRomCurveColor[] = { 0.0f, 1.0f, 0.0f, 1.0f }; // Green Color for catmull-rom curve from decastlejau
 float ZColor[] = {0.0f, 1.0f, 0.0f, 1.0f }; // Green color for picked axis in Z plane movement
 float XYColor[] = { 1.0f, 0.0f, 0.0f, 1.0f }; // Red color for picked axis in XY plane movement
+float loopVertexColor[] = { 1.0f, 1.0f, 0.0f, 1.0f }; // Yellow Color for bezier verticies
 
 // Setup the indicies for the subdivisions
 void initSubIndexCounts() {
@@ -333,6 +338,7 @@ void createObjects(void)
 	// Bezier VAO
 	createVAOs(bezier, bezIndicies, sizeof(bezier), sizeof(bezIndicies), 6);
 
+	// Check CRom
 	if (lastkey == 3) {
 		cRomCurve();
 	}
@@ -340,6 +346,9 @@ void createObjects(void)
 	// Catmull - Rom VAO
 	createVAOs(cRom, cRomIndicies, sizeof(cRom), sizeof(cRomIndicies), 7);
 	createVAOs(decastle, decastleIndicies, sizeof(decastle), sizeof(decastleIndicies), 8);
+
+	// Looping Index
+	createVAOs(loop, loopIndex, sizeof(loop), sizeof(loopIndex), 9);
 	
 }
 
@@ -373,13 +382,13 @@ void drawScene(void)
 			// Move ModelMatrix2 Downwards from Origin
 			ModelMatrix2 = glm::translate(
 				ModelMatrix,
-				glm::vec3(0.0f, -1.75f, 0.0f)
+				glm::vec3(0.0f, -2.0f, 0.0f)
 				); // TranslationMatrix * RotationMatrix;
 
 			// Translate the ModelMatrix Upwards from Origin
 			ModelMatrix = glm::translate(
 				ModelMatrix,
-				glm::vec3(0.0f, 1.75f, 0.0f)
+				glm::vec3(0.0f, 2.0f, 0.0f)
 				); // TranslationMatrix * RotationMatrix;
 
 			// Rotate ModelMatrix2 Around Y Axis by PI/2 for side view
@@ -406,7 +415,7 @@ void drawScene(void)
 		glBindVertexArray(VertexArrayId[0]);	// draw Vertices
 		glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[0]);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
-		//glDrawElements(GL_LINE_LOOP, NumVert[0], GL_UNSIGNED_SHORT, (void*)0);
+		glDrawElements(GL_LINE_LOOP, NumVert[0], GL_UNSIGNED_SHORT, (void*)0);
 		glDrawElements(GL_POINTS, NumVert[0], GL_UNSIGNED_SHORT, (void*)0);
 
 		// Key Action Task Selection
@@ -479,6 +488,13 @@ void drawScene(void)
 
 		}
 	
+		// Create Looping Vertex
+		if (loopToggle) {
+			glBindVertexArray(VertexArrayId[9]);	// draw Vertices
+			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[9]);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(loop), loop);
+			glDrawElements(GL_POINTS, NumVert[9], GL_UNSIGNED_SHORT, (void*)0);
+		}
 
 		// If doubleView enabled, draw the second object
 		if (doubleView) {
@@ -495,6 +511,7 @@ void drawScene(void)
 			glBindVertexArray(VertexArrayId[0]);	// draw Vertices
 			glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[0]);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
+			glDrawElements(GL_LINE_LOOP, NumVert[0], GL_UNSIGNED_SHORT, (void*)0);
 			glDrawElements(GL_POINTS, NumVert[0], GL_UNSIGNED_SHORT, (void*)0);
 
 			// Key Action Tasks
@@ -568,6 +585,14 @@ void drawScene(void)
 
 			};
 
+			// Create Looping Vertex
+			if (loopToggle) {
+				glBindVertexArray(VertexArrayId[9]);	// draw Vertices
+				glBindBuffer(GL_ARRAY_BUFFER, VertexBufferId[9]);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(loop), loop);
+				glDrawElements(GL_POINTS, NumVert[9], GL_UNSIGNED_SHORT, (void*)0);
+			}
+
 			// Binding All VAOs
 			glBindVertexArray(0);
 		}
@@ -603,7 +628,7 @@ void pickVertex(void)
 			// Translate Matrix
 			ModelMatrix = glm::translate(
 				ModelMatrix,
-				glm::vec3(0.0f, 1.75f, 0.0f)
+				glm::vec3(0.0f, 2.0f, 0.0f)
 				); 
 		}
 
@@ -668,7 +693,7 @@ void moveVertex(void)
 		// Translate Matrix
 		ModelMatrix = glm::translate(
 			ModelMatrix,
-			glm::vec3(0.0f, 1.75f, 0.0f)
+			glm::vec3(0.0f, 2.0f, 0.0f)
 			);
 	}
 
@@ -882,14 +907,20 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		}
 
 	}
-
 	
+	// Check Press Events for Keys 4, 5, Shifts
 	if (action == GLFW_PRESS) {
 
 		// Key 4 Double View Toggle
 		if (key == GLFW_KEY_4) {
 			doubleView = !doubleView;
 			(doubleView) ? printf("Double View ON\n") : printf("Double View OFF\n");
+		}
+
+		// Key 5 Looping Index Toggle
+		if (key == GLFW_KEY_5) {
+			loopToggle = !(loopToggle);
+			(loopToggle) ? printf("Loop Toggle ON\n") : printf("Loop Toggle OFF\n");
 		}
 
 		// Shift key Z-Axis Movement Toggle
@@ -899,10 +930,6 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			(zPick) ? printf("Z Axis Picking ON\n") : printf("Z Axis Picking OFF\n");
 		}
 
-		if (key == GLFW_KEY_5) {
-			loopToggle = !(loopToggle);
-			(loopToggle) ? printf("Loop Toggle ON\n") : printf("Loop Toggle OFF\n");
-		}
 	}
 }
 
@@ -1261,6 +1288,8 @@ int main(void)
 	// initialize OpenGL pipeline
 	initOpenGL();
 
+	currentLoopPosition = 0;
+
 	// For speed computation
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
@@ -1283,6 +1312,14 @@ int main(void)
 		createObjects(); // re-evaluate curves in case vertices have been moved
 		drawScene();
 
+		// Calculate Loop
+		if (loopToggle) {
+			(++currentLoopPosition % 150) ? false : currentLoopPosition = 0;
+			cRomCurve();
+			loop[0].SetCoords(decastle[currentLoopPosition].XYZW);
+			loop[0].SetColor(loopVertexColor);
+
+		}
 
 	} // Check if the ESC key was pressed or the window was closed
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
