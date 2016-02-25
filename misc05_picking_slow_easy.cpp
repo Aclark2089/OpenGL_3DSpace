@@ -97,7 +97,9 @@ void calculateCRomPoints(const Vertex, const Vertex, const Vertex, const Vertex,
 // GLOBAL VARIABLES
 GLFWwindow* window;
 const GLuint window_width = 1024, window_height = 768;
-int lastkey;
+int lastkey; // Key callback saver for testing
+bool zPick = false; // Toggle for Z Picking
+bool doubleView = false; // Toggle for 2 Views
 
 // Window Title
 char* windowTitle = "R. Alex Clark (6416-3663)";
@@ -340,8 +342,17 @@ void drawScene(void)
 
 	glUseProgram(programID);
 	{
+
+
 		glm::mat4 ModelMatrix = glm::mat4(1.0); // TranslationMatrix * RotationMatrix;
 		glm::mat4 MVP = gProjectionMatrix * gViewMatrix * ModelMatrix;
+
+
+		
+		// if key4 pressed {
+		//glm::scale
+		//glm::translate
+		// }
 
 		// Send our transformation to the currently bound shader,
 		// in the "MVP" uniform
@@ -507,7 +518,7 @@ void moveVertex(void)
 	glm::vec4 vp = glm::vec4(viewport[0], viewport[1], viewport[2], viewport[3]);
 	glm::vec3 worldCoords = glm::unProject(glm::vec3(window_width - xpos, window_height - ypos, 0.0), ModelMatrix, gProjectionMatrix, vp);
 
-	if (lastkey != 4) {	// If we are moving xy plane with shift key not being toggled
+	if (!zPick) {	// If we are moving xy plane with shift key not being toggled
 		if (gPickedIndex < IndexCount) {
 			Vertices[gPickedIndex].XYZW[0] = worldCoords[0];
 			Vertices[gPickedIndex].XYZW[1] = worldCoords[1];
@@ -596,8 +607,8 @@ void initOpenGL(void)
 
 	// Camera matrix
 	gViewMatrix = glm::lookAt(
-		//glm::vec3(0, 0, -5), // Camera is at (4,3,3), in World Space
-		glm::vec3(-5, 0, 0),  // Test Z - Axis 
+		glm::vec3(0, 0, -5), // Camera is at (4,3,3), in World Space
+		//glm::vec3(-5, 0, 0),  // Test Z - Axis 
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 		);
@@ -715,18 +726,22 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 
 	}
 
-	// Shift key Z-Axis Action
+	
 	if (action == GLFW_PRESS) {
-		if(key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
-		printf("\nShift Key Is Pressed\n");
-		(lastkey == 4) ? lastkey = -1 : lastkey = 4;
-		printf("Lastkey set to %d\n", lastkey);
-		(lastkey == 4) ? printf("Z-Axis Movement Turned ON\n") : printf("Z Axis Movement Turned OFF\n");
+
+		// Key 4 Double View Toggle
+		if (key == GLFW_KEY_4) {
+			doubleView = !doubleView;
+			(doubleView) ? printf("Double View ON\n") : printf("Double View OFF\n");
+		}
+
+		// Shift key Z-Axis Movement Toggle
+		if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
+			printf("\nShift Key Is Pressed\n");
+			zPick = !zPick;
+			(zPick) ? printf("Z Axis Picking ON\n") : printf("Z Axis Picking OFF\n");
 		}
 	}
-
-
-
 }
 
 void subdivide() {
